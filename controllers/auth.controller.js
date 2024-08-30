@@ -3,6 +3,7 @@ import createError from "../utils/createError.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
+// Register a new buyer
 export const register = async (req, res, next) => {
     try {
         // Check if username or email already exists
@@ -32,6 +33,7 @@ export const register = async (req, res, next) => {
     }
 };
 
+// Login a buyer
 export const login = async (req, res, next) => {
     try {
         const buyer = await BuyerModel.findOne({ username: req.body.username });
@@ -50,16 +52,17 @@ export const login = async (req, res, next) => {
                 email: buyer.email,
                 sellerId: buyer.sellerId,
             },
-            process.env.JWT_KEY
+            process.env.JWT_KEY,
+            { expiresIn: '24h' } // Ensure token expires after 24 hours
         );
 
         const { password, ...info } = buyer._doc;
         res
             .cookie("accessToken", token, {
                 httpOnly: true,
-                maxAge: 24 * 60 * 60 * 1000,
-                secure: true,
-
+                maxAge: 24 * 60 * 60 * 1000, // 24 hours
+                secure: true, // Set to true in production
+                sameSite: 'None' // Ensure cross-origin requests
             })
             .status(200)
             .send(info);
@@ -68,11 +71,13 @@ export const login = async (req, res, next) => {
     }
 };
 
+// Logout a buyer
 export const logout = async (req, res) => {
     res
         .clearCookie("accessToken", {
-            sameSite: "none",
-            secure: true,
+            httpOnly: true,
+            secure: true, // Set to true in production
+            sameSite: 'None' // Ensure cross-origin requests
         })
         .status(200)
         .send("Buyer has been logged out.");
